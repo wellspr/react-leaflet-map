@@ -1,0 +1,10 @@
+.custom-icon {
+
+    background:
+        url(./images/marker-icon.png) no-repeat left,
+        url(./images/marker-shadow.png) no-repeat left;
+}
+
+.react-leaflet-container {
+    cursor: auto !important;
+}
