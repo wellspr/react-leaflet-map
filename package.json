@@ -53,9 +53,13 @@
     },
     "repository": {
         "type": "git",
-        "url": ""
+        "url": "https://github.com/wellspr/react-leaflet-map"
     },
-    "keywords": [],
+    "keywords": [
+        "react",
+        "leaflet",
+        "maps"
+    ],
     "author": "Paulo Wells",
-    "homepage": ""
+    "homepage": "https://github.com/wellspr/react-leaflet-map#react-leaflet-map"
 }
