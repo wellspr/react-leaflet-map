@@ -75,6 +75,9 @@ const MapComponent = () => {
                 getMapCenter={(center) => {
                     coordsRef.current = center;
                 }}
+                zoomOptions={{
+                    position: "topright"
+                }}
             />
         </div>
     );

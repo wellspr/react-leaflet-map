@@ -13,6 +13,7 @@ interface MapProps {
     mapOptions: Types.MapOptions;
     getMapCenter?: (center: Types.Location) => void;
     interact?: (L: Types.Leaflet, map: Types.Map, marker: Types.Marker) => void;
+    zoomOptions?: Types.ZoomOptions;
 }
 
 /* Map */
@@ -22,6 +23,7 @@ const Map: FC<MapProps> = ({
     mapOptions,
     getMapCenter,
     interact,
+    zoomOptions
 }) => {
 
     const ref = useRef<HTMLDivElement>(null);
@@ -39,6 +41,7 @@ const Map: FC<MapProps> = ({
                 mapRef.current = L.map(ref.current, {
                     doubleClickZoom: false,
                     zoomSnap: 1,
+                    zoomControl: false
                 });
 
                 setRendered(true);
@@ -50,17 +53,17 @@ const Map: FC<MapProps> = ({
 
                 L.control.scale().addTo(mapRef.current);
 
-/* 
-                const defaultIcon = L.icon({
-                    iconUrl: "images/marker-icon.png",
-                    shadowUrl: "images/marker-shadow.png",
-                    iconSize: [25, 41],
-                    shadowSize: [41, 41],
-                    iconAnchor: [12.5, 41],
-                    //shadowAnchor: [10, 41]
-                    popupAnchor: [0, -35]
-                });
- */
+                /* 
+                                const defaultIcon = L.icon({
+                                    iconUrl: "images/marker-icon.png",
+                                    shadowUrl: "images/marker-shadow.png",
+                                    iconSize: [25, 41],
+                                    shadowSize: [41, 41],
+                                    iconAnchor: [12.5, 41],
+                                    //shadowAnchor: [10, 41]
+                                    popupAnchor: [0, -35]
+                                });
+                 */
 
                 const divIcon = L.divIcon({
                     className: "custom-icon",
@@ -76,6 +79,14 @@ const Map: FC<MapProps> = ({
                     })
                         .addTo(mapRef.current)
                         .bindPopup(defaultPopupText);
+                }
+
+                if (zoomOptions) {
+                    if (zoomOptions) {
+                        L.control.zoom(zoomOptions).addTo(mapRef.current);
+                    } 
+                } else {
+                    L.control.zoom().addTo(mapRef.current);
                 }
 
                 if (!initialized) {
