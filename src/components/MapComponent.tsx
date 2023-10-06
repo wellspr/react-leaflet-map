@@ -16,7 +16,7 @@ const MapComponent = () => {
 
     const [options, setOptions] = useState<Types.MapOptions>({
         center: location,
-        zoom: 10,
+        zoom: 10
     });
 
     const onCLickLocation = () => {

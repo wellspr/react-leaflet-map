@@ -12,7 +12,6 @@ interface MapProps {
     defaultPopupText?: Types.PopupContent;
     mapOptions: Types.MapOptions;
     getMapCenter?: (center: Types.Location) => void;
-    interact?: (L: Types.Leaflet, map: Types.Map, marker: Types.Marker) => void;
     zoomOptions?: Types.ZoomOptions;
 }
 
@@ -22,7 +21,6 @@ const Map: FC<MapProps> = ({
     defaultPopupText = "",
     mapOptions,
     getMapCenter,
-    interact,
     zoomOptions
 }) => {
 
@@ -137,12 +135,6 @@ const Map: FC<MapProps> = ({
             markerRef?.current?.setLatLng(mapOptions.center);
         }
     }, [mapOptions.center]);
-
-    useEffect(() => {
-        interact &&
-            (mapRef?.current && markerRef?.current) &&
-            interact(L, mapRef.current, markerRef.current);
-    }, []);
 
     useEffect(() => {
         const onMarkerCLickHandler = (e: L.LeafletMouseEvent) => {
