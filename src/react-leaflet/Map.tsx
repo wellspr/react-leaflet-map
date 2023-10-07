@@ -9,24 +9,26 @@ import { Types } from "./types";
 
 interface MapProps {
     height: number;
-    defaultPopupText?: Types.PopupContent;
+    popupText?: Types.PopupContent;
     mapOptions: Types.MapOptions;
-    getMapCenter?: (center: Types.Location) => void;
     zoomOptions?: Types.ZoomOptions;
+    scaleOptions?: Types.ScaleOptions;
+    markerOptions?: Types.MarkerOptions;
 }
 
 /* Map */
 const Map: FC<MapProps> = ({
     height,
-    defaultPopupText = "",
+    popupText,
     mapOptions,
-    getMapCenter,
-    zoomOptions
+    zoomOptions,
+    scaleOptions,
+    markerOptions,
 }) => {
 
     const ref = useRef<HTMLDivElement>(null);
 
-    const { mapRef, markerRef, setRendered } = useLeaflet();
+    const { mapRef, markerRef } = useLeaflet();
 
     const centerRef = useRef<Types.Location | undefined>(mapOptions.center);
     const zoomRef = useRef<number | undefined>(mapOptions.zoom);
@@ -38,30 +40,29 @@ const Map: FC<MapProps> = ({
             if (mapRef && markerRef) {
                 mapRef.current = L.map(ref.current, {
                     doubleClickZoom: false,
-                    zoomSnap: 1,
-                    zoomControl: false
+                    zoomControl: false,
+                    ...mapOptions,
                 });
-
-                setRendered(true);
 
                 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 })
                     .addTo(mapRef.current);
 
-                L.control.scale().addTo(mapRef.current);
+                /* Scale options */
+                if (scaleOptions) {
+                    L.control.scale(scaleOptions).addTo(mapRef.current);
+                } else {
+                    L.control.scale().addTo(mapRef.current);
+                }
 
-                /* 
-                                const defaultIcon = L.icon({
-                                    iconUrl: "images/marker-icon.png",
-                                    shadowUrl: "images/marker-shadow.png",
-                                    iconSize: [25, 41],
-                                    shadowSize: [41, 41],
-                                    iconAnchor: [12.5, 41],
-                                    //shadowAnchor: [10, 41]
-                                    popupAnchor: [0, -35]
-                                });
-                 */
+                /* Zoom options */
+                if (zoomOptions) {
+                    L.control.zoom(zoomOptions).addTo(mapRef.current);
+                }
+                else {
+                    L.control.zoom().addTo(mapRef.current);
+                }
 
                 const divIcon = L.divIcon({
                     className: "custom-icon",
@@ -70,21 +71,41 @@ const Map: FC<MapProps> = ({
                     popupAnchor: [0, -35],
                 });
 
+                /* Marker configuration */
                 if (mapOptions.center) {
-                    markerRef.current = L.marker(mapOptions.center, {
+                    const defaultMarkerOptions: L.MarkerOptions = {
                         draggable: true,
-                        icon: divIcon,
-                    })
-                        .addTo(mapRef.current)
-                        .bindPopup(defaultPopupText);
+                        icon: divIcon
+                    }
+                    if (markerOptions) {
+                        markerRef.current = L.marker(mapOptions.center, {
+                            ...defaultMarkerOptions,
+                            ...markerOptions,
+                        })
+                            .addTo(mapRef.current)
+                            
+                    } else {
+                        markerRef.current = L.marker(mapOptions.center, {
+                            ...defaultMarkerOptions,
+                        })
+                            .addTo(mapRef.current)
+                            
+                    }
+
+                    if (popupText) {
+                        markerRef.current?.bindPopup(popupText);
+                    }
                 }
 
-                if (zoomOptions) {
-                    if (zoomOptions) {
-                        L.control.zoom(zoomOptions).addTo(mapRef.current);
-                    } 
-                } else {
-                    L.control.zoom().addTo(mapRef.current);
+                if (mapOptions.center) {
+                    mapRef.current.setView(mapOptions.center, zoomRef.current);
+
+                    mapRef.current.flyTo(mapOptions.center, zoomRef.current, {
+                        animate: true,
+                        duration: .4
+                    });
+
+                    markerRef?.current?.setLatLng(mapOptions.center);
                 }
 
                 if (!initialized) {
@@ -101,12 +122,20 @@ const Map: FC<MapProps> = ({
                 }
             };
         }
-    }, [initialized]);
+    }, [initialized, zoomOptions, scaleOptions, markerOptions, mapOptions]);
+
 
     useEffect(() => {
         const onMarkerDragend = () => {
-            (centerRef.current = markerRef?.current?.getLatLng());
-            getMapCenter && (centerRef.current && getMapCenter(centerRef.current));
+
+            centerRef.current = markerRef?.current?.getLatLng();
+
+            if (centerRef.current) {
+                mapRef?.current?.flyTo(centerRef.current, zoomRef.current, {
+                    animate: true,
+                    duration: .4,
+                });
+            }
         };
 
         markerRef?.current?.on("dragend", onMarkerDragend);
@@ -116,43 +145,10 @@ const Map: FC<MapProps> = ({
         }
     }, [mapRef?.current, centerRef.current, markerRef?.current]);
 
-    useEffect(() => {
-        if (mapRef?.current) {
-            if (centerRef.current) {
-                mapRef.current.setView(centerRef.current, zoomRef.current);
-                getMapCenter && getMapCenter(centerRef.current);
-            }
-        }
-    }, [mapRef?.current, centerRef.current, zoomRef.current]);
-
-    useEffect(() => {
-        if (mapRef?.current && mapOptions.center) {
-            mapRef.current.flyTo(mapOptions.center, zoomRef.current, {
-                animate: true,
-                duration: .4
-            });
-
-            markerRef?.current?.setLatLng(mapOptions.center);
-        }
-    }, [mapOptions.center]);
-
-    useEffect(() => {
-        const onMarkerCLickHandler = (e: L.LeafletMouseEvent) => {
-            const coords = e.latlng;
-            markerRef?.current?.setPopupContent(`Coordinates: [${coords.lat}, ${coords.lng}]`);
-        };
-
-        markerRef?.current?.on("click", onMarkerCLickHandler);
-
-        return () => {
-            markerRef?.current?.off("click", onMarkerCLickHandler);
-        }
-    }, [markerRef?.current]);
 
     useEffect(() => {
         const onDblClick = (e: L.LeafletMouseEvent) => {
             const newCenter = e.latlng;
-            getMapCenter && getMapCenter(newCenter);
             const currentZoom = mapRef?.current?.getZoom();
             centerRef.current = newCenter;
 
@@ -171,6 +167,7 @@ const Map: FC<MapProps> = ({
         }
     }, [markerRef?.current, mapRef?.current, centerRef.current]);
 
+
     useEffect(() => {
         const handleZoom = () => {
             const currentZoom = mapRef?.current?.getZoom();
@@ -184,6 +181,7 @@ const Map: FC<MapProps> = ({
         }
     }, [mapRef?.current, zoomRef.current]);
 
+
     return (
         <div
             className="react-leaflet-container"
@@ -196,3 +194,5 @@ const Map: FC<MapProps> = ({
 export default Map;
 
 export const mapLocation = L.latLng;
+export const divIcon = L.divIcon;
+export const icon = L.icon;

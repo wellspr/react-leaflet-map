@@ -7,4 +7,5 @@
 
 .react-leaflet-container {
     cursor: auto !important;
+    font-size: 12px;
 }
