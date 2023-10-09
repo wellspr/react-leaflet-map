@@ -1,25 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { FC, useEffect, useRef } from "react";
 import Map, { mapLocation, useLeaflet, Types, icon } from "../react-leaflet";
-import { divIcon } from "leaflet";
 
-const MapComponent = () => {
+const MapComponent: FC<{ center: { lat: number, lng: number }, zoom: number }> = ({ center, zoom }) => {
 
     const { mapRef, markerRef } = useLeaflet();
 
-    const lat = -22.8969;
-    const lng = -43.2898;
+    const coordsRef = useRef<{ lat: number, lng: number }>(center);
 
-    let location = mapLocation(lat, lng);
-
-    const [coords, setCoords] = useState<{ lat: number, lng: number }>({ lat, lng });
-
-    const coordsRef = useRef<{ lat: number, lng: number }>({ lat, lng });
-
-    const [mapOptions, setMapOptions] = useState<Types.MapOptions>({
-        center: location,
-        zoom: 15,
+    const mapOptions: Types.MapOptions = {
+        center: mapLocation(center.lat, center.lng),
+        zoom: zoom,
         scrollWheelZoom: "center",
-    });
+    };
 
     const zoomOptions: Types.ZoomOptions = {
         position: "topright",
@@ -42,17 +34,26 @@ const MapComponent = () => {
         popupAnchor: [0, -2 * iconSize.height / 3],
     });
 
-    const cssIcon = divIcon({
+/*     const cssIcon = divIcon({
         className: "map-pin",
         iconSize: [40, 40],
         iconAnchor: [20, 40],
         popupAnchor: [0, -20],
-    })
+    }); */
 
     const markerOptions: Types.MarkerOptions = {
         opacity: .55,
         icon: customIcon,
     };
+
+    useEffect(() => {
+        mapRef?.current?.setZoom(zoom);
+    }, [zoom]);
+
+    useEffect(() => {
+        mapRef?.current?.flyTo(mapLocation(center.lat, center.lng));
+        markerRef?.current?.setLatLng(mapLocation(center.lat, center.lng));
+    }, [center]);
 
     const onUpdateLocation = () => {
         const center = markerRef?.current?.getLatLng();
@@ -127,33 +128,7 @@ const MapComponent = () => {
     return (
         <div className="map-component">
             <button onClick={onUpdateLocation}>Update Location</button>
-            <form className="coords-form" onSubmit={e => e.preventDefault()}>
-                <input
-                    type="number"
-                    step={.000000001}
-                    className="coords-input-lat"
-                    value={coords.lat}
-                    onChange={e => setCoords({ ...coords, lat: Number(e.target.value) })}
-                />
-                <input
-                    type="number"
-                    step={.000000001}
-                    className="coords-input-lng"
-                    value={coords.lng}
-                    onChange={e => setCoords({ ...coords, lng: Number(e.target.value) })}
-                />
-                <button
-                    className="button button__locate"
-                    onClick={() => {
-                        setMapOptions({
-                            ...mapOptions,
-                            center: mapLocation(Number(coords.lat), Number(coords.lng))
-                        });
-                    }}
-                >
-                    Locate
-                </button>
-            </form>
+            
             <Map
                 height={250}
                 mapOptions={mapOptions}
